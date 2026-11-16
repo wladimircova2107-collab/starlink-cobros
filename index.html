@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlink Fleet Visco | Control de Pagos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS para importar y exportar Excel/CSV -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        noc: {
+                            950: '#0b0f19',
+                            900: '#111827',
+                            800: '#182234',
+                            700: '#243049',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f8fafc;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(14, 165, 233, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 90% 90%, rgba(244, 63, 94, 0.05) 0%, transparent 45%);
+        }
+        .noc-panel {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+    <!-- Notificaciones Toast Flotantes -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Barra Superior -->
+    <header class="sticky top-0 z-30 noc-panel border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col lg:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-lg shadow-sky-500/20 border border-sky-400/30">
+                        <i class="fa-solid fa-satellite-dish text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-lg font-extrabold tracking-wider uppercase text-white">
+                                STARLINK <span class="text-sky-400 font-medium">FLOTA VISCO</span>
+                            </h1>
+                            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                TARIFA $110/MES
+                            </span>
+                        </div>
+                        <p id="current-date-display" class="text-xs text-slate-400 font-mono mt-0.5">Sincronizando fecha...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Globales -->
+            <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
+                <button onclick="undoLastAction()" id="undo-btn" class="hidden px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs sm:text-sm font-medium transition flex items-center gap-2" title="Deshacer el último pago registrado">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Deshacer</span>
+                </button>
+
+                <label class="cursor-pointer px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs sm:text-sm font-medium transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span>Importar Excel</span>
+                    <input type="file" id="excel-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+                </label>
+
+                <button onclick="exportToExcel()" class="px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-medium border border-slate-700 transition flex items-center gap-2" title="Exportar lista actualizada a Excel">
+                    <i class="fa-solid fa-file-export text-sky-400"></i>
+                    <span class="hidden sm:inline">Exportar Excel</span>
+                    <span class="sm:hidden">Exportar</span>
+                </button>
+
+                <button onclick="openModal()" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-sky-500/20 transition flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Agregar Antena</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Tarjetas KPI Superiores -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- KPI 1: Deuda Actual -->
+            <div id="debt-card" class="rounded-2xl p-5 bg-gradient-to-br from-rose-950/80 via-noc-900 to-noc-950 border border-rose-500/30 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-28 h-28 bg-rose-500/10 rounded-full blur-2xl"></div>
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span id="debt-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 mb-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
+                            CON DEUDA ACTIVA
+                        </span>
+                        <h2 id="debt-headline" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                            Debes 0 antenas
+                        </h2>
+                        <p id="debt-subtext" class="text-xs text-rose-200/75 mt-1">
+                            0 vencidas &bull; 0 vencen hoy
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl shrink-0">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-rose-500/20 flex items-baseline justify-between">
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Total adeudado:</span>
+                    <span id="debt-total-amount" class="text-2xl font-mono font-extrabold text-rose-400">$0.00</span>
+                </div>
+            </div>
+
+            <!-- KPI 2: Desglose de Estado de la Flota -->
+            <div class="rounded-2xl p-5 noc-panel flex flex-col justify-between">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Estado de la Flota</span>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <h3 id="uptodate-count" class="text-3xl font-extrabold text-white">0</h3>
+                            <span class="text-xs text-slate-400">antenas al día</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px] font-mono">
+                            <span class="px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/20">
+                                Vencidas: <strong id="kpi-overdue">0</strong>
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/20">
+                                Hoy: <strong id="kpi-today">0</strong>
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/20">
+                                Próximas: <strong id="kpi-soon">0</strong>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl shrink-0">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+                    <span class="text-slate-400">Total terminales activas:</span>
+                    <span id="total-count" class="font-mono font-bold text-white">0 antenas</span>
+                </div>
+            </div>
+
+            <!-- KPI 3: Presupuesto Mensual & Control de Lista -->
+            <div class="rounded-2xl p-5 noc-panel flex flex-col justify-between">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Presupuesto Mensual</span>
+                        <h3 id="monthly-total-amount" class="text-3xl font-mono font-extrabold text-white mt-1">$6,600.00</h3>
+                        <p class="text-xs text-slate-400 mt-1">Mensualidad estándar: <span class="text-slate-200 font-mono font-semibold">$110.00 USD</span> / antena</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 text-xl shrink-0">
+                        <i class="fa-solid fa-sack-dollar"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+                    <button onclick="confirmRestoreOriginal()" class="text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span>Restaurar Lista Original (60 Antenas)</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Barra de Filtros y Buscador -->
+        <section class="noc-panel rounded-2xl p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            <!-- Filtros Rápidos -->
+            <div class="flex items-center gap-1.5 bg-noc-950/90 p-1.5 rounded-xl border border-slate-800 overflow-x-auto">
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap bg-sky-500 text-slate-950">
+                    Todas (<span id="badge-all">0</span>)
+                </button>
+                <button onclick="setFilter('debt')" id="filter-debt" class="filter-btn px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap text-slate-400 hover:text-white flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    Con Deuda (<span id="badge-debt">0</span>)
+                </button>
+                <button onclick="setFilter('overdue')" id="filter-overdue" class="filter-btn px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap text-slate-400 hover:text-white">
+                    Vencidas (<span id="badge-overdue">0</span>)
+                </button>
+                <button onclick="setFilter('today')" id="filter-today" class="filter-btn px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap text-slate-400 hover:text-white">
+                    Vencen Hoy (<span id="badge-today">0</span>)
+                </button>
+                <button onclick="setFilter('paid')" id="filter-paid" class="filter-btn px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap text-slate-400 hover:text-white flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Al Día (<span id="badge-paid">0</span>)
+                </button>
+            </div>
+
+            <!-- Buscador en Tiempo Real -->
+            <div class="relative flex-1 lg:max-w-md">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                <input type="text" id="search-input" oninput="renderAntennas()" placeholder="Buscar por Asignado a, Kit o Serial..." 
+                    class="w-full pl-10 pr-9 py-2.5 rounded-xl bg-noc-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition">
+                <button onclick="clearSearch()" id="clear-search-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Tabla Principal Prioritaria -->
+        <section class="noc-panel rounded-2xl overflow-hidden shadow-2xl">
+            <div class="px-5 py-3.5 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 bg-noc-900/70">
+                <div class="flex items-center gap-2 text-xs text-slate-400">
+                    <i class="fa-solid fa-arrow-down-wide-short text-sky-400"></i>
+                    <span>Orden prioritario: <strong class="text-slate-200">Vencidas (más atrasadas primero) &rarr; Vencen Hoy &rarr; Próximas &rarr; Al Día</strong></span>
+                </div>
+                <div class="text-xs font-mono text-slate-400">
+                    Mostrando <span id="visible-count" class="text-white font-bold">0</span> registros
+                </div>
+            </div>
+
+            <!-- Vista Desktop (Tabla) -->
+            <div class="hidden lg:block overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 bg-noc-950/60">
+                            <th class="py-3.5 px-5 font-semibold">Estado / Atraso</th>
+                            <th class="py-3.5 px-4 font-semibold">Asignado a</th>
+                            <th class="py-3.5 px-4 font-semibold">Kit / Serial</th>
+                            <th class="py-3.5 px-4 font-semibold">Último Pago</th>
+                            <th class="py-3.5 px-4 font-semibold">Próximo Cobro</th>
+                            <th class="py-3.5 px-4 font-semibold text-right">Deuda / Tarifa</th>
+                            <th class="py-3.5 px-5 font-semibold text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="antennas-table-body" class="divide-y divide-slate-800/60 text-sm">
+                        <!-- Filas generadas dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Vista Móvil / Tablet (Tarjetas) -->
+            <div id="antennas-mobile-list" class="lg:hidden divide-y divide-slate-800/80">
+                <!-- Tarjetas generadas dinámicamente -->
+            </div>
+
+            <!-- Estado Vacío -->
+            <div id="empty-state" class="hidden py-16 px-4 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-slate-800/80 text-slate-500 flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fa-solid fa-satellite"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">No se encontraron antenas</h3>
+                <p class="text-sm text-slate-400 max-w-md mx-auto mt-1">
+                    No hay terminales que coincidan con el filtro o búsqueda actual.
+                </p>
+                <div class="mt-6 flex flex-wrap justify-center gap-3">
+                    <button onclick="setFilter('all'); clearSearch();" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-medium text-white border border-slate-700 transition">
+                        Ver todas las antenas
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-slate-500 border-t border-slate-900">
+        Starlink Fleet Control &bull; Flota Visco (60 Terminales) &bull; Datos almacenados localmente en tu navegador
+    </footer>
+
+    <!-- Modal para Agregar / Editar Antena -->
+    <div id="antenna-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-noc-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 id="modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-satellite-dish text-sky-400"></i>
+                    <span>Registrar Antena Starlink</span>
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="antenna-form" onsubmit="saveAntennaForm(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="edit-id">
+                
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Asignado a *</label>
+                    <input type="text" id="field-assigned" required placeholder="Ej. JULIO MARRERO"
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-sky-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Kit de Antena *</label>
+                        <input type="text" id="field-kit" required placeholder="Ej. KIT4M015491947GQ"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm font-mono text-white focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Serial *</label>
+                        <input type="text" id="field-serial" required placeholder="Ej. M1HT01638903RKJ"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm font-mono text-white focus:outline-none focus:border-sky-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Mensualidad (USD) *</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono">$</span>
+                            <input type="number" step="0.01" min="0" id="field-amount" required value="110"
+                                class="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm font-mono text-white focus:outline-none focus:border-sky-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Última Fecha de Pago *</label>
+                        <input type="date" id="field-ultimoPago" required
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-sky-500">
+                    </div>
+                </div>
+
+                <p class="text-[11px] text-slate-400 bg-noc-950/70 p-2.5 rounded-xl border border-slate-800">
+                    <i class="fa-solid fa-circle-info text-sky-400 mr-1"></i>
+                    El próximo cobro se calculará automáticamente sumando <strong>1 mes calendario</strong> a la última fecha de pago ingresada.
+                </p>
+
+                <div class="pt-4 border-t border-slate-800 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-sm font-bold text-slate-950 shadow-lg shadow-sky-500/20 transition">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación Personalizado -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-noc-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <h3 id="confirm-title" class="text-lg font-bold text-white">¿Confirmar acción?</h3>
+            <p id="confirm-message" class="text-sm text-slate-400 mt-2">Esta acción actualizará los registros.</p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300 transition">
+                    Cancelar
+                </button>
+                <button id="confirm-action-btn" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-sm font-bold text-slate-950 transition">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LISTA OFICIAL DE LAS 60 ANTENAS DE LA FLOTA VISCO ($110 USD CADA UNA)
+        const ANTENAS_INICIALES = [
+            {"kit": "KIT4M015491947GQ", "asignado": "JULIO MARRERO", "serial": "M1HT01638903RKJ", "ultimoPago": "2026-09-28", "monto": 110},
+            {"kit": "KIT4M00594185H37", "asignado": "TRAILER PIAR", "serial": "M1HT00631066", "ultimoPago": "2026-10-28", "monto": 110},
+            {"kit": "KIT4M01616928MZT", "asignado": "BRIQUETAS GERENCIA", "serial": "M1HT01706035KFQ", "ultimoPago": "2026-10-28", "monto": 110},
+            {"kit": "KIT4M00899956JVT", "asignado": "OSCAR VISCO", "serial": "M1HT00955778", "ultimoPago": "2026-10-01", "monto": 110},
+            {"kit": "KIT4M00136036Z6Z", "asignado": "CARGA BARCO", "serial": "M1HT00158552", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M00164850M3H", "asignado": "DRAGON", "serial": "M1HT00185208", "ultimoPago": "2026-10-03", "monto": 110},
+            {"kit": "KIT4M00165058TQ4", "asignado": "TH4", "serial": "M1HT00187484", "ultimoPago": "2026-10-04", "monto": 110},
+            {"kit": "KIT4M001324472H4", "asignado": "IVAN ROJAS", "serial": "M1HT00154718", "ultimoPago": "2026-10-03", "monto": 110},
+            {"kit": "KIT4M02716298GD9", "asignado": "PRESIDENCIA 1 FMO", "serial": "M1HT02829622NR7", "ultimoPago": "2026-10-03", "monto": 110},
+            {"kit": "KIT4M02715185J45", "asignado": "CESAR MALAVE PIAR", "serial": "M1HT02824424VRC", "ultimoPago": "2026-10-12", "monto": 110},
+            {"kit": "KIT4M02712099P8W", "asignado": "WELINGTONG", "serial": "M1HT02821822HR5", "ultimoPago": "2026-10-12", "monto": 110},
+            {"kit": "KIT4M02716297HRV", "asignado": "BRAGANZA VEHICULO", "serial": "M1HT02829620JDH", "ultimoPago": "2026-10-07", "monto": 110},
+            {"kit": "KIT4M02712089MXH", "asignado": "INSTRUMENTACION", "serial": "M1HT0282181747M", "ultimoPago": "2026-10-02", "monto": 110},
+            {"kit": "KIT4M02712120BNW", "asignado": "MARIO PRESIOTTI", "serial": "M1HT02816539WKB", "ultimoPago": "2026-11-03", "monto": 110},
+            {"kit": "KIT4M02715769TNP", "asignado": "MARIO MOURA", "serial": "M1HT02825942B76", "ultimoPago": "2026-11-03", "monto": 110},
+            {"kit": "KIT400854711", "asignado": "GERENCIA RENOVADA", "serial": "4PBA00782446", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT402444706P7V", "asignado": "CASONA", "serial": "4PBA02369473", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT402416686NJF", "asignado": "PMH CONTROL", "serial": "4PBA02339554", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M02579902SXP", "asignado": "GERENCIA PMH", "serial": "M1HT02688478NDZ", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M00899275XXB", "asignado": "RENATO PIAR", "serial": "M1HT00955080", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M00023352", "asignado": "IVAN/TEOBALDO", "serial": "M1HT00039210", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M00326019NS2", "asignado": "OLADIR CARNEIRO", "serial": "M1HT00358408", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M016116956PR", "asignado": "VAGONES SAN ISIDRO", "serial": "M1HT0170368985N", "ultimoPago": "2026-10-13", "monto": 110},
+            {"kit": "KIT4M01548964F87", "asignado": "GERENCIA DE FERROCARIL", "serial": "M1HT01638621TRF", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M00324400VUC", "asignado": "GERENCIA FERRO", "serial": "M1HT00359074", "ultimoPago": "2026-10-17", "monto": 110},
+            {"kit": "KIT4M024183736QM", "asignado": "BRAGANZA VEHICULO", "serial": "M1HT02521461VB2", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M00025862", "asignado": "PRESIDENCIA JINDAL", "serial": "M1HT00040097", "ultimoPago": "2026-11-03", "monto": 110},
+            {"kit": "KIT4M01614913KWG", "asignado": "JORGE URRIBARRI", "serial": "M1HT01705308ZBB", "ultimoPago": "2026-11-03", "monto": 110},
+            {"kit": "KIT404498392ZWV", "asignado": "PRESIDENCIA 2 FMO", "serial": "4PBA04480124JW7", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT404495630XDM", "asignado": "TELEMATICA 1", "serial": "4PBA04477297N4Z", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT404495807JHZ", "asignado": "TELEMATICA 2", "serial": "4PBA04477468XPV", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M02662127R82", "asignado": "MR GUPTA", "serial": "M1HT027725166PX", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M04407471TM7", "asignado": "BRIQUETAS II", "serial": "M1HT045320539ZD", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M04182409RNK", "asignado": "KILOMETRO3.3", "serial": "M1HT04299631PBW", "ultimoPago": "2026-10-11", "monto": 110},
+            {"kit": "KIT4M04937538NXJ", "asignado": "FOR RANYER", "serial": "M1HT05080807KHB", "ultimoPago": "2026-10-16", "monto": 110},
+            {"kit": "KIT4M04938809TBC", "asignado": "FORD SUPER DUTTY", "serial": "M1HT05079587B8Q", "ultimoPago": "2026-10-16", "monto": 110},
+            {"kit": "KIT4M047470509TZ", "asignado": "A33CT8D (PLACA VEHICULO)", "serial": "M1HT04876201WJB", "ultimoPago": "2026-10-16", "monto": 110},
+            {"kit": "KIT4M04685898WZ2", "asignado": "ferrocarril piar", "serial": "M1HT048160252WX", "ultimoPago": "2026-10-16", "monto": 110},
+            {"kit": "KIT4M04937468XVW", "asignado": "ferrocarril pzo", "serial": "M1HT050805198B9", "ultimoPago": "2026-10-16", "monto": 110},
+            {"kit": "KIT4M04562527JHN", "asignado": "RICARDO BRAZILERO", "serial": "M1HT04610842HG6", "ultimoPago": "2026-10-18", "monto": 110},
+            {"kit": "KIT4M04761639CNN", "asignado": "KILOMETRO3.3 (2)", "serial": "M1HT04891908G8F", "ultimoPago": "2026-11-03", "monto": 110},
+            {"kit": "KIT4M02392320DTT", "asignado": "JORGE URRIBARRI 2", "serial": "M1HT02503612FP5", "ultimoPago": "2026-11-04", "monto": 110},
+            {"kit": "KIT4M0584018245R", "asignado": "PANEL 10", "serial": "M1HT060320212J6", "ultimoPago": "2026-10-23", "monto": 110},
+            {"kit": "KFV4M00430618VJ8", "asignado": "CD PIAR 1", "serial": "M1FV00702899VM4", "ultimoPago": "2026-10-10", "monto": 110},
+            {"kit": "KFV4M00154963JPT", "asignado": "CD PIAR 2", "serial": "M1FV00197486MKZ", "ultimoPago": "2026-10-10", "monto": 110},
+            {"kit": "KFV4M00075409NTQ", "asignado": "CD PIAR 3", "serial": "M1FV001063574PT", "ultimoPago": "2026-10-10", "monto": 110},
+            {"kit": "KFV4M00075396XQS", "asignado": "CD PIAR 4", "serial": "M1FV00107795G4R", "ultimoPago": "2026-10-10", "monto": 110},
+            {"kit": "KFV4M00113893G9S", "asignado": "CD PIAR 5", "serial": "M1FV00136020KM8", "ultimoPago": "2026-10-10", "monto": 110},
+            {"kit": "KFV4M00150303C5D", "asignado": "CD PIAR 6", "serial": "M1FV00191784GQK", "ultimoPago": "2026-10-10", "monto": 110},
+            {"kit": "KFV4M000754212GK", "asignado": "CD PIAR 7", "serial": "M1FV00099297GPD", "ultimoPago": "2026-10-10", "monto": 110},
+            {"kit": "KFV4M00535884J2R", "asignado": "CD PIAR 8", "serial": "M1FV00789293STZ", "ultimoPago": "2026-10-10", "monto": 110},
+            {"kit": "KIT408606313BPX", "asignado": "BRIQUETAS NUEVA", "serial": "4PBA08691923XV5", "ultimoPago": "2026-10-19", "monto": 110},
+            {"kit": "KIT408606295VHW", "asignado": "BRIQUETAS NUEVA 2", "serial": "4PBA08691969WW9", "ultimoPago": "2026-10-19", "monto": 110},
+            {"kit": "KFV4M00075410BDB", "asignado": "BRIQUETAS COMEDOR", "serial": "M1FV00107878GG4", "ultimoPago": "2026-10-20", "monto": 110},
+            {"kit": "KFV4M00302183RSG", "asignado": "PELLAS", "serial": "M1FV00351776MDK", "ultimoPago": "2026-10-23", "monto": 110},
+            {"kit": "KFV4M00624914XDB", "asignado": "SEGURIDAD PATRIMONIAL 1", "serial": "M1FV00947097KVF", "ultimoPago": "2026-11-03", "monto": 110},
+            {"kit": "KFV4M00154997TT2", "asignado": "SEGURIDAD PATRIMONIAL 2", "serial": "M1FV00197454TH5", "ultimoPago": "2026-11-03", "monto": 110},
+            {"kit": "KFV4M00113942NDR", "asignado": "SEGURIDAD PATRIMONIAL 3", "serial": "M1FV001364425ZH", "ultimoPago": "2026-11-03", "monto": 110},
+            {"kit": "KFV4M00149569DRH", "asignado": "SEGURIDAD PATRIMONIAL 4", "serial": "M1FV001916675B8", "ultimoPago": "2026-11-03", "monto": 110},
+            {"kit": "KFV4M00325799G6P", "asignado": "107.7", "serial": "M1FV00409769F5R", "ultimoPago": "2026-11-06", "monto": 110}
+        ];
+
+        const STORAGE_KEY = 'starlink_visco_fleet_v2';
+        let antennas = [];
+        let currentFilter = 'all';
+        let historyStack = [];
+
+        // Obtener medianoche local de hoy
+        function getTodayMidnight() {
+            const now = new Date();
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        }
+
+        // Sumar N meses calendario manejando correctamente fines de mes (ej. 31 Ene + 1 mes = 28 Feb)
+        function addMonthsToDateStr(dateStr, monthsToAdd) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const totalMonths = (y * 12 + (m - 1)) + monthsToAdd;
+            const targetYear = Math.floor(totalMonths / 12);
+            const targetMonth = (totalMonths % 12) + 1;
+            const maxDaysInTarget = new Date(targetYear, targetMonth, 0).getDate();
+            const safeDay = Math.min(d, maxDaysInTarget);
+            return `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+        }
+
+        // Formatear fecha YYYY-MM-DD a texto legible en español
+        function formatDateReadable(dateStr) {
+            if (!dateStr) return 'Sin fecha';
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            return `${String(d).padStart(2, '0')} ${months[m - 1]} ${y}`;
+        }
+
+        // Evaluar estado de cada antena respecto a hoy
+        function evaluateAntenna(antenna) {
+            const today = getTodayMidnight();
+            const proximoPago = addMonthsToDateStr(antenna.ultimoPago, 1);
+            const [py, pm, pd] = proximoPago.split('-').map(Number);
+            const due = new Date(py, pm - 1, pd);
+
+            const diffTime = due.getTime() - today.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            const monthlyRate = parseFloat(antenna.monto) || 110;
+
+            if (diffDays < 0) {
+                // Calcular cuántos cortes mensuales vencidos acumula
+                let monthsOwed = 1;
+                while (true) {
+                    const nextCutStr = addMonthsToDateStr(antenna.ultimoPago, monthsOwed + 1);
+                    const [ny, nm, nd] = nextCutStr.split('-').map(Number);
+                    const nextCutDate = new Date(ny, nm - 1, nd);
+                    if (nextCutDate <= today) {
+                        monthsOwed++;
+                    } else {
+                        break;
+                    }
+                }
+
+                const overdueDays = Math.abs(diffDays);
+                const totalOwed = monthsOwed * monthlyRate;
+                return {
+                    code: 'overdue',
+                    isDebt: true,
+                    proximoPago,
+                    diffDays,
+                    overdueDays,
+                    monthsOwed,
+                    totalOwed,
+                    shortLabel: 'VENCIDA',
+                    detailLabel: `${overdueDays} ${overdueDays === 1 ? 'día' : 'días'} de atraso (${monthsOwed} ${monthsOwed === 1 ? 'mes' : 'meses'})`,
+                    priority: 1
+                };
+            } else if (diffDays === 0) {
+                return {
+                    code: 'today',
+                    isDebt: true,
+                    proximoPago,
+                    diffDays: 0,
+                    overdueDays: 0,
+                    monthsOwed: 1,
+                    totalOwed: monthlyRate,
+                    shortLabel: 'VENCE HOY',
+                    detailLabel: 'Corte programado para hoy',
+                    priority: 2
+                };
+            } else if (diffDays <= 5) {
+                return {
+                    code: 'soon',
+                    isDebt: false,
+                    proximoPago,
+                    diffDays,
+                    overdueDays: 0,
+                    monthsOwed: 0,
+                    totalOwed: 0,
+                    shortLabel: 'PRÓXIMA A VENCER',
+                    detailLabel: `Vence en ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`,
+                    priority: 3
+                };
+            } else {
+                return {
+                    code: 'paid',
+                    isDebt: false,
+                    proximoPago,
+                    diffDays,
+                    overdueDays: 0,
+                    monthsOwed: 0,
+                    totalOwed: 0,
+                    shortLabel: 'AL DÍA',
+                    detailLabel: `Faltan ${diffDays} días`,
+                    priority: 4
+                };
+            }
+        }
+
+        // Inicialización
+        window.onload = function() {
+            const today = getTodayMidnight();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedToday = today.toLocaleDateString('es-ES', options);
+            document.getElementById('current-date-display').textContent = 
+                'Hoy: ' + formattedToday.charAt(0).toUpperCase() + formattedToday.slice(1);
+
+            loadFromStorage();
+            renderAntennas();
+        };
+
+        function loadFromStorage() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        antennas = parsed;
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error('Error cargando localStorage:', e);
+            }
+            // Si no hay datos guardados, cargar las 60 antenas reales de Visco
+            antennas = ANTENAS_INICIALES.map(item => ({
+                id: crypto.randomUUID(),
+                ...item
+            }));
+            saveToStorage();
+        }
+
+        function saveToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(antennas));
+        }
+
+        function pushHistory() {
+            historyStack.push(JSON.stringify(antennas));
+            if (historyStack.length > 15) historyStack.shift();
+            document.getElementById('undo-btn').classList.remove('hidden');
+        }
+
+        function undoLastAction() {
+            if (historyStack.length === 0) return;
+            antennas = JSON.parse(historyStack.pop());
+            saveToStorage();
+            renderAntennas();
+            if (historyStack.length === 0) {
+                document.getElementById('undo-btn').classList.add('hidden');
+            }
+            showToast('Se deshizo el último cambio', 'info');
+        }
+
+        function confirmRestoreOriginal() {
+            openConfirmModal(
+                '¿Restaurar Lista Original (60 Antenas)?',
+                'Se restablecerán exactamente las 60 antenas del archivo Excel de Visco con sus fechas de último pago originales y tarifa de $110.',
+                () => {
+                    pushHistory();
+                    antennas = ANTENAS_INICIALES.map(item => ({
+                        id: crypto.randomUUID(),
+                        ...item
+                    }));
+                    saveToStorage();
+                    renderAntennas();
+                    showToast('Lista original de 60 antenas restaurada', 'success');
+                }
+            );
+        }
+
+        // Registrar Pago (+1 Mes)
+        function registerPayment(id) {
+            const idx = antennas.findIndex(a => a.id === id);
+            if (idx === -1) return;
+
+            pushHistory();
+            const antenna = antennas[idx];
+            antenna.ultimoPago = addMonthsToDateStr(antenna.ultimoPago, 1);
+            const nextDate = addMonthsToDateStr(antenna.ultimoPago, 1);
+
+            saveToStorage();
+            renderAntennas();
+            showToast(`Pago (+1 mes) registrado para ${antenna.asignado}. Próximo cobro: ${formatDateReadable(nextDate)}`, 'success');
+        }
+
+        // Eliminar antena
+        function deleteAntenna(id) {
+            const antenna = antennas.find(a => a.id === id);
+            if (!antenna) return;
+            openConfirmModal(
+                '¿Eliminar antena del registro?',
+                `Se eliminará ${antenna.kit} (${antenna.asignado}).`,
+                () => {
+                    pushHistory();
+                    antennas = antennas.filter(a => a.id !== id);
+                    saveToStorage();
+                    renderAntennas();
+                    showToast('Antena eliminada', 'info');
+                }
+            );
+        }
+
+        // Filtros y búsqueda
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-sky-500', 'text-slate-950', 'font-bold');
+                btn.classList.add('text-slate-400', 'font-semibold');
+            });
+            const active = document.getElementById(`filter-${filter}`);
+            active.classList.remove('text-slate-400', 'font-semibold');
+            active.classList.add('bg-sky-500', 'text-slate-950', 'font-bold');
+            renderAntennas();
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            renderAntennas();
+        }
+
+        // Renderizado completo
+        function renderAntennas() {
+            const searchInput = document.getElementById('search-input');
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            document.getElementById('clear-search-btn').classList.toggle('hidden', !searchTerm);
+
+            const evaluated = antennas.map(a => ({
+                ...a,
+                eval: evaluateAntenna(a)
+            }));
+
+            // Estadísticas globales
+            const overdueList = evaluated.filter(a => a.eval.code === 'overdue');
+            const todayList = evaluated.filter(a => a.eval.code === 'today');
+            const soonList = evaluated.filter(a => a.eval.code === 'soon');
+            const debtList = evaluated.filter(a => a.eval.isDebt);
+            const upToDateList = evaluated.filter(a => !a.eval.isDebt);
+
+            const totalDebtUSD = debtList.reduce((sum, a) => sum + a.eval.totalOwed, 0);
+            const totalMonthlyBudget = evaluated.reduce((sum, a) => sum + (parseFloat(a.monto) || 110), 0);
+
+            // Actualizar KPIs
+            const debtCount = debtList.length;
+            document.getElementById('debt-headline').textContent = 
+                debtCount === 1 ? 'Debes 1 antena' : `Debes ${debtCount} antenas`;
+            document.getElementById('debt-subtext').textContent = 
+                `${overdueList.length} vencidas • ${todayList.length} vencen hoy`;
+            document.getElementById('debt-total-amount').textContent = 
+                `$${totalDebtUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            document.getElementById('uptodate-count').textContent = upToDateList.length;
+            document.getElementById('kpi-overdue').textContent = overdueList.length;
+            document.getElementById('kpi-today').textContent = todayList.length;
+            document.getElementById('kpi-soon').textContent = soonList.length;
+            document.getElementById('total-count').textContent = `${evaluated.length} antenas`;
+            document.getElementById('monthly-total-amount').textContent = 
+                `$${totalMonthlyBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            // Actualizar Badges de Filtros
+            document.getElementById('badge-all').textContent = evaluated.length;
+            document.getElementById('badge-debt').textContent = debtCount;
+            document.getElementById('badge-overdue').textContent = overdueList.length;
+            document.getElementById('badge-today').textContent = todayList.length;
+            document.getElementById('badge-paid').textContent = upToDateList.length;
+
+            // Estilo dinámico de tarjeta de deuda
+            const debtCard = document.getElementById('debt-card');
+            if (debtCount === 0) {
+                debtCard.classList.remove('from-rose-950/80', 'border-rose-500/30');
+                debtCard.classList.add('from-emerald-950/50', 'border-emerald-500/30');
+            } else {
+                debtCard.classList.add('from-rose-950/80', 'border-rose-500/30');
+                debtCard.classList.remove('from-emerald-950/50', 'border-emerald-500/30');
+            }
+
+            // Filtrado
+            let filtered = evaluated.filter(a => {
+                if (currentFilter === 'debt' && !a.eval.isDebt) return false;
+                if (currentFilter === 'overdue' && a.eval.code !== 'overdue') return false;
+                if (currentFilter === 'today' && a.eval.code !== 'today') return false;
+                if (currentFilter === 'paid' && a.eval.isDebt) return false;
+
+                if (searchTerm) {
+                    const sAsignado = (a.asignado || '').toLowerCase().includes(searchTerm);
+                    const sKit = (a.kit || '').toLowerCase().includes(searchTerm);
+                    const sSerial = (a.serial || '').toLowerCase().includes(searchTerm);
+                    return sAsignado || sKit || sSerial;
+                }
+                return true;
+            });
+
+            // Ordenamiento prioritario automático:
+            // 1. VENCIDA (más atrasada primero -> diffDays más negativo)
+            // 2. VENCE HOY
+            // 3. PRÓXIMA A VENCER
+            // 4. AL DÍA
+            filtered.sort((a, b) => {
+                if (a.eval.priority !== b.eval.priority) {
+                    return a.eval.priority - b.eval.priority;
+                }
+                return a.eval.diffDays - b.eval.diffDays;
+            });
+
+            document.getElementById('visible-count').textContent = filtered.length;
+
+            const tbody = document.getElementById('antennas-table-body');
+            const mobileList = document.getElementById('antennas-mobile-list');
+            const emptyState = document.getElementById('empty-state');
+
+            tbody.innerHTML = '';
+            mobileList.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            filtered.forEach(item => {
+                const st = item.eval;
+                const badgeClass = getBadgeClass(st.code);
+                const iconClass = getStatusIcon(st.code);
+                const rowBg = st.code === 'overdue' 
+                    ? 'bg-rose-500/[0.05] hover:bg-rose-500/[0.09]' 
+                    : st.code === 'today' 
+                        ? 'bg-amber-500/[0.05] hover:bg-amber-500/[0.09]' 
+                        : 'hover:bg-slate-800/40';
+
+                const displayAmount = st.isDebt ? st.totalOwed : (parseFloat(item.monto) || 110);
+                const amountSubtext = (st.isDebt && st.monthsOwed > 1) 
+                    ? `${st.monthsOwed} meses × $${item.monto}` 
+                    : `Tarifa: $${item.monto}/mes`;
+
+                // Desktop Table Row
+                const tr = document.createElement('tr');
+                tr.className = `transition ${rowBg}`;
+                tr.innerHTML = `
+                    <td class="py-3.5 px-5 whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${badgeClass}">
+                            <i class="fa-solid ${iconClass}"></i>
+                            ${st.shortLabel}
+                        </span>
+                        <div class="text-[11px] text-slate-400 mt-1 font-medium">${st.detailLabel}</div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="font-bold text-white uppercase tracking-tight">${escapeHtml(item.asignado)}</div>
+                    </td>
+                    <td class="py-3.5 px-4 font-mono text-xs">
+                        <div class="text-sky-400 font-semibold">${escapeHtml(item.kit)}</div>
+                        <div class="text-slate-400 mt-0.5">SN: ${escapeHtml(item.serial)}</div>
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap text-xs text-slate-400 font-mono">
+                        ${formatDateReadable(item.ultimoPago)}
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap text-xs font-mono ${st.isDebt ? 'text-rose-300 font-bold' : 'text-slate-200'}">
+                        <i class="fa-regular fa-calendar mr-1 opacity-70"></i>
+                        ${formatDateReadable(st.proximoPago)}
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap text-right font-mono">
+                        <div class="font-extrabold text-base ${st.isDebt ? 'text-rose-400' : 'text-slate-200'}">
+                            $${displayAmount.toFixed(2)}
+                        </div>
+                        <div class="text-[10px] text-slate-400">${amountSubtext}</div>
+                    </td>
+                    <td class="py-3.5 px-5 whitespace-nowrap text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <button onclick="registerPayment('${item.id}')" 
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${st.isDebt ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20' : 'bg-slate-800 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30'}"
+                                title="Sumar 1 mes a la última fecha de pago">
+                                <i class="fa-solid fa-check"></i>
+                                <span>Registrar Pago (+1 Mes)</span>
+                            </button>
+                            <button onclick="openModal('${item.id}')" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Editar fecha o datos">
+                                <i class="fa-solid fa-pen text-xs"></i>
+                            </button>
+                            <button onclick="deleteAntenna('${item.id}')" class="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition" title="Eliminar">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                // Mobile Card
+                const card = document.createElement('div');
+                card.className = `p-4 space-y-3 ${rowBg}`;
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold border ${badgeClass}">
+                                <i class="fa-solid ${iconClass}"></i>
+                                ${st.shortLabel} &bull; ${st.detailLabel}
+                            </span>
+                            <h4 class="font-bold text-white text-base mt-1.5 uppercase">${escapeHtml(item.asignado)}</h4>
+                        </div>
+                        <div class="text-right font-mono shrink-0">
+                            <div class="font-extrabold text-lg ${st.isDebt ? 'text-rose-400' : 'text-white'}">
+                                $${displayAmount.toFixed(2)}
+                            </div>
+                            <div class="text-[10px] text-slate-400">${amountSubtext}</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-mono bg-noc-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                        <div>
+                            <span class="text-slate-500 block text-[10px] uppercase">Kit / Serial</span>
+                            <span class="text-sky-400 font-semibold block truncate">${escapeHtml(item.kit)}</span>
+                            <span class="text-slate-400 text-[11px] block truncate">${escapeHtml(item.serial)}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 block text-[10px] uppercase">Ciclo de Pago</span>
+                            <span class="text-slate-400 text-[11px] block">Últ: ${formatDateReadable(item.ultimoPago)}</span>
+                            <span class="${st.isDebt ? 'text-rose-300 font-bold' : 'text-emerald-300'} text-[11px] block">Próx: ${formatDateReadable(st.proximoPago)}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end gap-2 pt-1">
+                        <button onclick="registerPayment('${item.id}')" class="flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 ${st.isDebt ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-emerald-400 border border-emerald-500/30'}">
+                            <i class="fa-solid fa-check"></i> Registrar Pago (+1 Mes)
+                        </button>
+                        <button onclick="openModal('${item.id}')" class="p-2.5 rounded-xl bg-slate-800 text-slate-300">
+                            <i class="fa-solid fa-pen text-xs"></i>
+                        </button>
+                        <button onclick="deleteAntenna('${item.id}')" class="p-2.5 rounded-xl bg-slate-800 text-rose-400">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                mobileList.appendChild(card);
+            });
+        }
+
+        function getBadgeClass(code) {
+            switch (code) {
+                case 'overdue': return 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+                case 'today': return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                case 'soon': return 'bg-sky-500/20 text-sky-300 border-sky-500/40';
+                default: return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+            }
+        }
+
+        function getStatusIcon(code) {
+            switch (code) {
+                case 'overdue': return 'fa-circle-exclamation';
+                case 'today': return 'fa-clock';
+                case 'soon': return 'fa-calendar-day';
+                default: return 'fa-circle-check';
+            }
+        }
+
+        // Modal Agregar / Editar
+        function openModal(id = null) {
+            const modal = document.getElementById('antenna-modal');
+            const form = document.getElementById('antenna-form');
+            form.reset();
+
+            if (id) {
+                const item = antennas.find(a => a.id === id);
+                if (!item) return;
+                document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-pen text-sky-400"></i> <span>Editar Antena</span>';
+                document.getElementById('edit-id').value = item.id;
+                document.getElementById('field-assigned').value = item.asignado;
+                document.getElementById('field-kit').value = item.kit;
+                document.getElementById('field-serial').value = item.serial;
+                document.getElementById('field-amount').value = item.monto;
+                document.getElementById('field-ultimoPago').value = item.ultimoPago;
+            } else {
+                document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-satellite-dish text-sky-400"></i> <span>Agregar Nueva Antena</span>';
+                document.getElementById('edit-id').value = '';
+                document.getElementById('field-amount').value = 110;
+                const today = getTodayMidnight();
+                document.getElementById('field-ultimoPago').value = 
+                    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('antenna-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function saveAntennaForm(e) {
+            e.preventDefault();
+            pushHistory();
+            const id = document.getElementById('edit-id').value;
+            const data = {
+                asignado: document.getElementById('field-assigned').value.trim(),
+                kit: document.getElementById('field-kit').value.trim().toUpperCase(),
+                serial: document.getElementById('field-serial').value.trim().toUpperCase(),
+                monto: parseFloat(document.getElementById('field-amount').value) || 110,
+                ultimoPago: document.getElementById('field-ultimoPago').value
+            };
+
+            if (id) {
+                const idx = antennas.findIndex(a => a.id === id);
+                if (idx !== -1) antennas[idx] = { ...antennas[idx], ...data };
+                showToast('Antena actualizada correctamente', 'success');
+            } else {
+                antennas.push({ id: crypto.randomUUID(), ...data });
+                showToast('Nueva antena agregada a la flota', 'success');
+            }
+
+            saveToStorage();
+            renderAntennas();
+            closeModal();
+        }
+
+        // --- IMPORTAR Y EXPORTAR EXCEL (SheetJS) ---
+
+        function exportToExcel() {
+            if (antennas.length === 0) {
+                showToast('No hay datos para exportar', 'error');
+                return;
+            }
+
+            const rows = antennas.map((a, index) => {
+                const ev = evaluateAntenna(a);
+                return {
+                    'N°': index + 1,
+                    'KIT DE ANTENAS': a.kit,
+                    'ASIGNADAS': a.asignado,
+                    'SERIAL': a.serial,
+                    'FECHA DE COBROS': a.ultimoPago,
+                    'PROXIMO PAGO': ev.proximoPago,
+                    'TARIFA MENSUAL ($)': parseFloat(a.monto) || 110,
+                    'MESES ADEUDADOS': ev.monthsOwed,
+                    'DEUDA TOTAL ($)': ev.totalOwed,
+                    'ESTADO': ev.shortLabel
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(rows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'FLOTA VISCO');
+            XLSX.writeFile(workbook, `Starlink_Flota_Visco_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            showToast('Excel exportado con éxito', 'success');
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+                    if (rows.length === 0) {
+                        showToast('El archivo Excel está vacío', 'error');
+                        return;
+                    }
+
+                    pushHistory();
+                    let processed = 0;
+                    const today = getTodayMidnight();
+
+                    rows.forEach(row => {
+                        const norm = {};
+                        Object.keys(row).forEach(k => {
+                            const clean = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                            norm[clean] = row[k];
+                        });
+
+                        const kit = String(norm['kit de antenas'] || norm['kit'] || norm['kit number'] || '').trim().toUpperCase();
+                        const asignado = String(norm['asignadas'] || norm['asignado a'] || norm['asignado'] || norm['cliente'] || 'SIN ASIGNAR').trim();
+                        const serial = String(norm['serial'] || norm['sn'] || '').trim().toUpperCase();
+                        
+                        const rawMonto = String(norm['tarifa mensual ($)'] || norm['monto'] || norm['tarifa'] || '110').replace(/[^0-9.,]/g, '').replace(',', '.');
+                        const monto = parseFloat(rawMonto) || 110;
+
+                        const rawDate = norm['fecha de cobros'] || norm['ultimo pago'] || norm['fecha de pago'] || norm['fecha'];
+                        const ultimoPago = parseExcelDate(rawDate, today);
+
+                        if (kit || serial) {
+                            const existingIdx = antennas.findIndex(a => (kit && a.kit === kit) || (serial && a.serial === serial));
+                            const record = {
+                                id: existingIdx !== -1 ? antennas[existingIdx].id : crypto.randomUUID(),
+                                kit: kit || 'N/A',
+                                asignado,
+                                serial: serial || 'N/A',
+                                ultimoPago,
+                                monto
+                            };
+
+                            if (existingIdx !== -1) {
+                                antennas[existingIdx] = record;
+                            } else {
+                                antennas.push(record);
+                            }
+                            processed++;
+                        }
+                    });
+
+                    saveToStorage();
+                    renderAntennas();
+                    showToast(`Se actualizaron/importaron ${processed} antenas desde el archivo`, 'success');
+                } catch (err) {
+                    console.error(err);
+                    showToast('Error al procesar el archivo Excel/CSV', 'error');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseExcelDate(val, today) {
+            const fallback = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            if (!val && val !== 0) return fallback;
+
+            if (val instanceof Date && !isNaN(val)) {
+                return `${val.getFullYear()}-${String(val.getMonth() + 1).padStart(2, '0')}-${String(val.getDate()).padStart(2, '0')}`;
+            }
+
+            if (typeof val === 'number' && val > 31) {
+                const utcDays = Math.floor(val - 25569);
+                const d = new Date(utcDays * 86400 * 1000);
+                return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+            }
+
+            const str = String(val).trim();
+            if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+                const [y, m, d] = str.slice(0, 10).split('-');
+                return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            }
+            if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(str)) {
+                const [d, m, y] = str.split(/[\/\-]/);
+                return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            }
+            return fallback;
+        }
+
+        // --- UTILIDADES UI ---
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const styles = {
+                success: 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200',
+                error: 'bg-rose-950/95 border-rose-500/50 text-rose-200',
+                info: 'bg-slate-900/95 border-sky-500/50 text-sky-200'
+            };
+            const icons = {
+                success: 'fa-circle-check text-emerald-400',
+                error: 'fa-circle-exclamation text-rose-400',
+                info: 'fa-circle-info text-sky-400'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl text-sm font-medium transform transition-all duration-300 translate-y-2 opacity-0 ${styles[type]}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type]}"></i><span>${escapeHtml(message)}</span>`;
+            
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        let confirmCallback = null;
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            confirmCallback = onConfirm;
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            confirmCallback = null;
+        }
+
+        document.getElementById('confirm-action-btn').addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            closeConfirmModal();
+        });
+    </script>
+</body>
+</html>
