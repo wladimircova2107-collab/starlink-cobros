@@ -226,7 +226,7 @@
             <!-- Buscador en Tiempo Real -->
             <div class="relative flex-1 lg:max-w-md">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-                <input type="text" id="search-input" oninput="renderAntennas()" placeholder="Buscar por Asignado a, Kit o Serial..." 
+                <input type="text" id="search-input" oninput="renderAntennas()" placeholder="Buscar por Asignado a, Kit, Serial o N° Sesión..." 
                     class="w-full pl-10 pr-9 py-2.5 rounded-xl bg-noc-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition">
                 <button onclick="clearSearch()" id="clear-search-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
                     <i class="fa-solid fa-circle-xmark"></i>
@@ -253,6 +253,7 @@
                         <tr class="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 bg-noc-950/60">
                             <th class="py-3.5 px-5 font-semibold">Estado / Atraso</th>
                             <th class="py-3.5 px-4 font-semibold">Asignado a</th>
+                            <th class="py-3.5 px-4 font-semibold">N° Inicio de Sesión</th>
                             <th class="py-3.5 px-4 font-semibold">Kit / Serial</th>
                             <th class="py-3.5 px-4 font-semibold">Último Pago</th>
                             <th class="py-3.5 px-4 font-semibold">Próximo Cobro</th>
@@ -310,21 +311,15 @@
             <form id="antenna-form" onsubmit="saveAntennaForm(event)" class="mt-4 space-y-4">
                 <input type="hidden" id="edit-id">
                 
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Asignado a *</label>
-                    <input type="text" id="field-assigned" required placeholder="Ej. JULIO MARRERO"
-                        class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-sky-500">
-                </div>
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Kit de Antena *</label>
-                        <input type="text" id="field-kit" required placeholder="Ej. KIT4M015491947GQ"
-                            class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm font-mono text-white focus:outline-none focus:border-sky-500">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Asignado a *</label>
+                        <input type="text" id="field-assigned" required placeholder="Ej. JULIO MARRERO"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-sky-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Serial *</label>
-                        <input type="text" id="field-serial" required placeholder="Ej. M1HT01638903RKJ"
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">N° Inicio de Sesión</label>
+                        <input type="text" id="field-numeroSesion" placeholder="Ej. +58 412-0000000 / ID"
                             class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm font-mono text-white focus:outline-none focus:border-sky-500">
                     </div>
                 </div>
@@ -381,66 +376,66 @@
     <script>
         // LISTA OFICIAL DE LAS 60 ANTENAS DE LA FLOTA VISCO ($110 USD CADA UNA)
         const ANTENAS_INICIALES = [
-            {"kit": "KIT4M015491947GQ", "asignado": "JULIO MARRERO", "serial": "M1HT01638903RKJ", "ultimoPago": "2026-09-28", "monto": 110},
-            {"kit": "KIT4M00594185H37", "asignado": "TRAILER PIAR", "serial": "M1HT00631066", "ultimoPago": "2026-10-28", "monto": 110},
-            {"kit": "KIT4M01616928MZT", "asignado": "BRIQUETAS GERENCIA", "serial": "M1HT01706035KFQ", "ultimoPago": "2026-10-28", "monto": 110},
-            {"kit": "KIT4M00899956JVT", "asignado": "OSCAR VISCO", "serial": "M1HT00955778", "ultimoPago": "2026-10-01", "monto": 110},
-            {"kit": "KIT4M00136036Z6Z", "asignado": "CARGA BARCO", "serial": "M1HT00158552", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M00164850M3H", "asignado": "DRAGON", "serial": "M1HT00185208", "ultimoPago": "2026-10-03", "monto": 110},
-            {"kit": "KIT4M00165058TQ4", "asignado": "TH4", "serial": "M1HT00187484", "ultimoPago": "2026-10-04", "monto": 110},
-            {"kit": "KIT4M001324472H4", "asignado": "IVAN ROJAS", "serial": "M1HT00154718", "ultimoPago": "2026-10-03", "monto": 110},
-            {"kit": "KIT4M02716298GD9", "asignado": "PRESIDENCIA 1 FMO", "serial": "M1HT02829622NR7", "ultimoPago": "2026-10-03", "monto": 110},
-            {"kit": "KIT4M02715185J45", "asignado": "CESAR MALAVE PIAR", "serial": "M1HT02824424VRC", "ultimoPago": "2026-10-12", "monto": 110},
-            {"kit": "KIT4M02712099P8W", "asignado": "WELINGTONG", "serial": "M1HT02821822HR5", "ultimoPago": "2026-10-12", "monto": 110},
-            {"kit": "KIT4M02716297HRV", "asignado": "BRAGANZA VEHICULO", "serial": "M1HT02829620JDH", "ultimoPago": "2026-10-07", "monto": 110},
-            {"kit": "KIT4M02712089MXH", "asignado": "INSTRUMENTACION", "serial": "M1HT0282181747M", "ultimoPago": "2026-10-02", "monto": 110},
-            {"kit": "KIT4M02712120BNW", "asignado": "MARIO PRESIOTTI", "serial": "M1HT02816539WKB", "ultimoPago": "2026-11-03", "monto": 110},
-            {"kit": "KIT4M02715769TNP", "asignado": "MARIO MOURA", "serial": "M1HT02825942B76", "ultimoPago": "2026-11-03", "monto": 110},
-            {"kit": "KIT400854711", "asignado": "GERENCIA RENOVADA", "serial": "4PBA00782446", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT402444706P7V", "asignado": "CASONA", "serial": "4PBA02369473", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT402416686NJF", "asignado": "PMH CONTROL", "serial": "4PBA02339554", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M02579902SXP", "asignado": "GERENCIA PMH", "serial": "M1HT02688478NDZ", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M00899275XXB", "asignado": "RENATO PIAR", "serial": "M1HT00955080", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M00023352", "asignado": "IVAN/TEOBALDO", "serial": "M1HT00039210", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M00326019NS2", "asignado": "OLADIR CARNEIRO", "serial": "M1HT00358408", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M016116956PR", "asignado": "VAGONES SAN ISIDRO", "serial": "M1HT0170368985N", "ultimoPago": "2026-10-13", "monto": 110},
-            {"kit": "KIT4M01548964F87", "asignado": "GERENCIA DE FERROCARIL", "serial": "M1HT01638621TRF", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M00324400VUC", "asignado": "GERENCIA FERRO", "serial": "M1HT00359074", "ultimoPago": "2026-10-17", "monto": 110},
-            {"kit": "KIT4M024183736QM", "asignado": "BRAGANZA VEHICULO", "serial": "M1HT02521461VB2", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M00025862", "asignado": "PRESIDENCIA JINDAL", "serial": "M1HT00040097", "ultimoPago": "2026-11-03", "monto": 110},
-            {"kit": "KIT4M01614913KWG", "asignado": "JORGE URRIBARRI", "serial": "M1HT01705308ZBB", "ultimoPago": "2026-11-03", "monto": 110},
-            {"kit": "KIT404498392ZWV", "asignado": "PRESIDENCIA 2 FMO", "serial": "4PBA04480124JW7", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT404495630XDM", "asignado": "TELEMATICA 1", "serial": "4PBA04477297N4Z", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT404495807JHZ", "asignado": "TELEMATICA 2", "serial": "4PBA04477468XPV", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M02662127R82", "asignado": "MR GUPTA", "serial": "M1HT027725166PX", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M04407471TM7", "asignado": "BRIQUETAS II", "serial": "M1HT045320539ZD", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M04182409RNK", "asignado": "KILOMETRO3.3", "serial": "M1HT04299631PBW", "ultimoPago": "2026-10-11", "monto": 110},
-            {"kit": "KIT4M04937538NXJ", "asignado": "FOR RANYER", "serial": "M1HT05080807KHB", "ultimoPago": "2026-10-16", "monto": 110},
-            {"kit": "KIT4M04938809TBC", "asignado": "FORD SUPER DUTTY", "serial": "M1HT05079587B8Q", "ultimoPago": "2026-10-16", "monto": 110},
-            {"kit": "KIT4M047470509TZ", "asignado": "A33CT8D (PLACA VEHICULO)", "serial": "M1HT04876201WJB", "ultimoPago": "2026-10-16", "monto": 110},
-            {"kit": "KIT4M04685898WZ2", "asignado": "ferrocarril piar", "serial": "M1HT048160252WX", "ultimoPago": "2026-10-16", "monto": 110},
-            {"kit": "KIT4M04937468XVW", "asignado": "ferrocarril pzo", "serial": "M1HT050805198B9", "ultimoPago": "2026-10-16", "monto": 110},
-            {"kit": "KIT4M04562527JHN", "asignado": "RICARDO BRAZILERO", "serial": "M1HT04610842HG6", "ultimoPago": "2026-10-18", "monto": 110},
-            {"kit": "KIT4M04761639CNN", "asignado": "KILOMETRO3.3 (2)", "serial": "M1HT04891908G8F", "ultimoPago": "2026-11-03", "monto": 110},
-            {"kit": "KIT4M02392320DTT", "asignado": "JORGE URRIBARRI 2", "serial": "M1HT02503612FP5", "ultimoPago": "2026-11-04", "monto": 110},
-            {"kit": "KIT4M0584018245R", "asignado": "PANEL 10", "serial": "M1HT060320212J6", "ultimoPago": "2026-10-23", "monto": 110},
-            {"kit": "KFV4M00430618VJ8", "asignado": "CD PIAR 1", "serial": "M1FV00702899VM4", "ultimoPago": "2026-10-10", "monto": 110},
-            {"kit": "KFV4M00154963JPT", "asignado": "CD PIAR 2", "serial": "M1FV00197486MKZ", "ultimoPago": "2026-10-10", "monto": 110},
-            {"kit": "KFV4M00075409NTQ", "asignado": "CD PIAR 3", "serial": "M1FV001063574PT", "ultimoPago": "2026-10-10", "monto": 110},
-            {"kit": "KFV4M00075396XQS", "asignado": "CD PIAR 4", "serial": "M1FV00107795G4R", "ultimoPago": "2026-10-10", "monto": 110},
-            {"kit": "KFV4M00113893G9S", "asignado": "CD PIAR 5", "serial": "M1FV00136020KM8", "ultimoPago": "2026-10-10", "monto": 110},
-            {"kit": "KFV4M00150303C5D", "asignado": "CD PIAR 6", "serial": "M1FV00191784GQK", "ultimoPago": "2026-10-10", "monto": 110},
-            {"kit": "KFV4M000754212GK", "asignado": "CD PIAR 7", "serial": "M1FV00099297GPD", "ultimoPago": "2026-10-10", "monto": 110},
-            {"kit": "KFV4M00535884J2R", "asignado": "CD PIAR 8", "serial": "M1FV00789293STZ", "ultimoPago": "2026-10-10", "monto": 110},
-            {"kit": "KIT408606313BPX", "asignado": "BRIQUETAS NUEVA", "serial": "4PBA08691923XV5", "ultimoPago": "2026-10-19", "monto": 110},
-            {"kit": "KIT408606295VHW", "asignado": "BRIQUETAS NUEVA 2", "serial": "4PBA08691969WW9", "ultimoPago": "2026-10-19", "monto": 110},
-            {"kit": "KFV4M00075410BDB", "asignado": "BRIQUETAS COMEDOR", "serial": "M1FV00107878GG4", "ultimoPago": "2026-10-20", "monto": 110},
-            {"kit": "KFV4M00302183RSG", "asignado": "PELLAS", "serial": "M1FV00351776MDK", "ultimoPago": "2026-10-23", "monto": 110},
-            {"kit": "KFV4M00624914XDB", "asignado": "SEGURIDAD PATRIMONIAL 1", "serial": "M1FV00947097KVF", "ultimoPago": "2026-11-03", "monto": 110},
-            {"kit": "KFV4M00154997TT2", "asignado": "SEGURIDAD PATRIMONIAL 2", "serial": "M1FV00197454TH5", "ultimoPago": "2026-11-03", "monto": 110},
-            {"kit": "KFV4M00113942NDR", "asignado": "SEGURIDAD PATRIMONIAL 3", "serial": "M1FV001364425ZH", "ultimoPago": "2026-11-03", "monto": 110},
-            {"kit": "KFV4M00149569DRH", "asignado": "SEGURIDAD PATRIMONIAL 4", "serial": "M1FV001916675B8", "ultimoPago": "2026-11-03", "monto": 110},
-            {"kit": "KFV4M00325799G6P", "asignado": "107.7", "serial": "M1FV00409769F5R", "ultimoPago": "2026-11-06", "monto": 110}
+            {"kit": "KIT4M015491947GQ", "asignado": "JULIO MARRERO", "serial": "M1HT01638903RKJ", "ultimoPago": "2026-09-28", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00594185H37", "asignado": "TRAILER PIAR", "serial": "M1HT00631066", "ultimoPago": "2026-10-28", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M01616928MZT", "asignado": "BRIQUETAS GERENCIA", "serial": "M1HT01706035KFQ", "ultimoPago": "2026-10-28", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00899956JVT", "asignado": "OSCAR VISCO", "serial": "M1HT00955778", "ultimoPago": "2026-10-01", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00136036Z6Z", "asignado": "CARGA BARCO", "serial": "M1HT00158552", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00164850M3H", "asignado": "DRAGON", "serial": "M1HT00185208", "ultimoPago": "2026-10-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00165058TQ4", "asignado": "TH4", "serial": "M1HT00187484", "ultimoPago": "2026-10-04", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M001324472H4", "asignado": "IVAN ROJAS", "serial": "M1HT00154718", "ultimoPago": "2026-10-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02716298GD9", "asignado": "PRESIDENCIA 1 FMO", "serial": "M1HT02829622NR7", "ultimoPago": "2026-10-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02715185J45", "asignado": "CESAR MALAVE PIAR", "serial": "M1HT02824424VRC", "ultimoPago": "2026-10-12", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02712099P8W", "asignado": "WELINGTONG", "serial": "M1HT02821822HR5", "ultimoPago": "2026-10-12", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02716297HRV", "asignado": "BRAGANZA VEHICULO", "serial": "M1HT02829620JDH", "ultimoPago": "2026-10-07", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02712089MXH", "asignado": "INSTRUMENTACION", "serial": "M1HT0282181747M", "ultimoPago": "2026-10-02", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02712120BNW", "asignado": "MARIO PRESIOTTI", "serial": "M1HT02816539WKB", "ultimoPago": "2026-11-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02715769TNP", "asignado": "MARIO MOURA", "serial": "M1HT02825942B76", "ultimoPago": "2026-11-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT400854711", "asignado": "GERENCIA RENOVADA", "serial": "4PBA00782446", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT402444706P7V", "asignado": "CASONA", "serial": "4PBA02369473", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT402416686NJF", "asignado": "PMH CONTROL", "serial": "4PBA02339554", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02579902SXP", "asignado": "GERENCIA PMH", "serial": "M1HT02688478NDZ", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00899275XXB", "asignado": "RENATO PIAR", "serial": "M1HT00955080", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00023352", "asignado": "IVAN/TEOBALDO", "serial": "M1HT00039210", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00326019NS2", "asignado": "OLADIR CARNEIRO", "serial": "M1HT00358408", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M016116956PR", "asignado": "VAGONES SAN ISIDRO", "serial": "M1HT0170368985N", "ultimoPago": "2026-10-13", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M01548964F87", "asignado": "GERENCIA DE FERROCARIL", "serial": "M1HT01638621TRF", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00324400VUC", "asignado": "GERENCIA FERRO", "serial": "M1HT00359074", "ultimoPago": "2026-10-17", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M024183736QM", "asignado": "BRAGANZA VEHICULO", "serial": "M1HT02521461VB2", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M00025862", "asignado": "PRESIDENCIA JINDAL", "serial": "M1HT00040097", "ultimoPago": "2026-11-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M01614913KWG", "asignado": "JORGE URRIBARRI", "serial": "M1HT01705308ZBB", "ultimoPago": "2026-11-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT404498392ZWV", "asignado": "PRESIDENCIA 2 FMO", "serial": "4PBA04480124JW7", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT404495630XDM", "asignado": "TELEMATICA 1", "serial": "4PBA04477297N4Z", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT404495807JHZ", "asignado": "TELEMATICA 2", "serial": "4PBA04477468XPV", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02662127R82", "asignado": "MR GUPTA", "serial": "M1HT027725166PX", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M04407471TM7", "asignado": "BRIQUETAS II", "serial": "M1HT045320539ZD", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M04182409RNK", "asignado": "KILOMETRO3.3", "serial": "M1HT04299631PBW", "ultimoPago": "2026-10-11", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M04937538NXJ", "asignado": "FOR RANYER", "serial": "M1HT05080807KHB", "ultimoPago": "2026-10-16", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M04938809TBC", "asignado": "FORD SUPER DUTTY", "serial": "M1HT05079587B8Q", "ultimoPago": "2026-10-16", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M047470509TZ", "asignado": "A33CT8D (PLACA VEHICULO)", "serial": "M1HT04876201WJB", "ultimoPago": "2026-10-16", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M04685898WZ2", "asignado": "ferrocarril piar", "serial": "M1HT048160252WX", "ultimoPago": "2026-10-16", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M04937468XVW", "asignado": "ferrocarril pzo", "serial": "M1HT050805198B9", "ultimoPago": "2026-10-16", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M04562527JHN", "asignado": "RICARDO BRAZILERO", "serial": "M1HT04610842HG6", "ultimoPago": "2026-10-18", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M04761639CNN", "asignado": "KILOMETRO3.3 (2)", "serial": "M1HT04891908G8F", "ultimoPago": "2026-11-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M02392320DTT", "asignado": "JORGE URRIBARRI 2", "serial": "M1HT02503612FP5", "ultimoPago": "2026-11-04", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT4M0584018245R", "asignado": "PANEL 10", "serial": "M1HT060320212J6", "ultimoPago": "2026-10-23", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00430618VJ8", "asignado": "CD PIAR 1", "serial": "M1FV00702899VM4", "ultimoPago": "2026-10-10", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00154963JPT", "asignado": "CD PIAR 2", "serial": "M1FV00197486MKZ", "ultimoPago": "2026-10-10", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00075409NTQ", "asignado": "CD PIAR 3", "serial": "M1FV001063574PT", "ultimoPago": "2026-10-10", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00075396XQS", "asignado": "CD PIAR 4", "serial": "M1FV00107795G4R", "ultimoPago": "2026-10-10", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00113893G9S", "asignado": "CD PIAR 5", "serial": "M1FV00136020KM8", "ultimoPago": "2026-10-10", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00150303C5D", "asignado": "CD PIAR 6", "serial": "M1FV00191784GQK", "ultimoPago": "2026-10-10", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M000754212GK", "asignado": "CD PIAR 7", "serial": "M1FV00099297GPD", "ultimoPago": "2026-10-10", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00535884J2R", "asignado": "CD PIAR 8", "serial": "M1FV00789293STZ", "ultimoPago": "2026-10-10", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT408606313BPX", "asignado": "BRIQUETAS NUEVA", "serial": "4PBA08691923XV5", "ultimoPago": "2026-10-19", "monto": 110, "numeroSesion": ""},
+            {"kit": "KIT408606295VHW", "asignado": "BRIQUETAS NUEVA 2", "serial": "4PBA08691969WW9", "ultimoPago": "2026-10-19", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00075410BDB", "asignado": "BRIQUETAS COMEDOR", "serial": "M1FV00107878GG4", "ultimoPago": "2026-10-20", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00302183RSG", "asignado": "PELLAS", "serial": "M1FV00351776MDK", "ultimoPago": "2026-10-23", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00624914XDB", "asignado": "SEGURIDAD PATRIMONIAL 1", "serial": "M1FV00947097KVF", "ultimoPago": "2026-11-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00154997TT2", "asignado": "SEGURIDAD PATRIMONIAL 2", "serial": "M1FV00197454TH5", "ultimoPago": "2026-11-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00113942NDR", "asignado": "SEGURIDAD PATRIMONIAL 3", "serial": "M1FV001364425ZH", "ultimoPago": "2026-11-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00149569DRH", "asignado": "SEGURIDAD PATRIMONIAL 4", "serial": "M1FV001916675B8", "ultimoPago": "2026-11-03", "monto": 110, "numeroSesion": ""},
+            {"kit": "KFV4M00325799G6P", "asignado": "107.7", "serial": "M1FV00409769F5R", "ultimoPago": "2026-11-06", "monto": 110, "numeroSesion": ""}
         ];
 
         const STORAGE_KEY = 'starlink_visco_fleet_v2';
@@ -572,7 +567,10 @@
                 if (raw) {
                     const parsed = JSON.parse(raw);
                     if (Array.isArray(parsed) && parsed.length > 0) {
-                        antennas = parsed;
+                        antennas = parsed.map(item => ({
+                            numeroSesion: '',
+                            ...item
+                        }));
                         return;
                     }
                 }
@@ -741,7 +739,8 @@
                     const sAsignado = (a.asignado || '').toLowerCase().includes(searchTerm);
                     const sKit = (a.kit || '').toLowerCase().includes(searchTerm);
                     const sSerial = (a.serial || '').toLowerCase().includes(searchTerm);
-                    return sAsignado || sKit || sSerial;
+                    const sSesion = (a.numeroSesion || '').toLowerCase().includes(searchTerm);
+                    return sAsignado || sKit || sSerial || sSesion;
                 }
                 return true;
             });
@@ -787,6 +786,7 @@
                 const amountSubtext = (st.isDebt && st.monthsOwed > 1) 
                     ? `${st.monthsOwed} meses × $${item.monto}` 
                     : `Tarifa: $${item.monto}/mes`;
+                const hasSesion = Boolean((item.numeroSesion || '').trim());
 
                 // Desktop Table Row
                 const tr = document.createElement('tr');
@@ -801,6 +801,21 @@
                     </td>
                     <td class="py-3.5 px-4">
                         <div class="font-bold text-white uppercase tracking-tight">${escapeHtml(item.asignado)}</div>
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap font-mono text-xs">
+                        ${hasSesion 
+                            ? `<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/90 border border-slate-700/80 text-slate-200">
+                                   <i class="fa-solid fa-key text-sky-400 text-[10px]"></i>
+                                   <span>${escapeHtml(item.numeroSesion)}</span>
+                                   <button onclick="copySessionNumber('${escapeAttr(item.numeroSesion)}')" class="ml-1 text-slate-400 hover:text-sky-400 transition" title="Copiar número de inicio de sesión">
+                                       <i class="fa-regular fa-copy"></i>
+                                   </button>
+                               </div>`
+                            : `<button onclick="openModal('${item.id}', true)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-noc-950/70 hover:bg-slate-800 border border-dashed border-slate-700 text-slate-400 hover:text-sky-400 transition text-[11px]" title="Asignar número de inicio de sesión">
+                                   <i class="fa-solid fa-plus text-[10px]"></i>
+                                   <span>Agregar N° Sesión</span>
+                               </button>`
+                        }
                     </td>
                     <td class="py-3.5 px-4 font-mono text-xs">
                         <div class="text-sky-400 font-semibold">${escapeHtml(item.kit)}</div>
@@ -857,6 +872,18 @@
                             <div class="text-[10px] text-slate-400">${amountSubtext}</div>
                         </div>
                     </div>
+                    <div class="flex items-center justify-between gap-2 text-xs font-mono bg-noc-950/80 px-3 py-2 rounded-xl border border-slate-800/80">
+                        <span class="text-slate-400 text-[11px]"><i class="fa-solid fa-key text-sky-400 mr-1.5"></i>N° Sesión:</span>
+                        ${hasSesion
+                            ? `<div class="flex items-center gap-2 text-slate-200 font-semibold">
+                                   <span>${escapeHtml(item.numeroSesion)}</span>
+                                   <button onclick="copySessionNumber('${escapeAttr(item.numeroSesion)}')" class="text-sky-400 hover:text-sky-300" title="Copiar">
+                                       <i class="fa-regular fa-copy"></i>
+                                   </button>
+                               </div>`
+                            : `<button onclick="openModal('${item.id}', true)" class="text-sky-400 hover:underline text-[11px]">+ Asignar número</button>`
+                        }
+                    </div>
                     <div class="grid grid-cols-2 gap-2 text-xs font-mono bg-noc-950/60 p-2.5 rounded-xl border border-slate-800/80">
                         <div>
                             <span class="text-slate-500 block text-[10px] uppercase">Kit / Serial</span>
@@ -904,7 +931,7 @@
         }
 
         // Modal Agregar / Editar
-        function openModal(id = null) {
+        function openModal(id = null, focusSession = false) {
             const modal = document.getElementById('antenna-modal');
             const form = document.getElementById('antenna-form');
             form.reset();
@@ -915,6 +942,7 @@
                 document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-pen text-sky-400"></i> <span>Editar Antena</span>';
                 document.getElementById('edit-id').value = item.id;
                 document.getElementById('field-assigned').value = item.asignado;
+                document.getElementById('field-numeroSesion').value = item.numeroSesion || '';
                 document.getElementById('field-kit').value = item.kit;
                 document.getElementById('field-serial').value = item.serial;
                 document.getElementById('field-amount').value = item.monto;
@@ -922,6 +950,7 @@
             } else {
                 document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-satellite-dish text-sky-400"></i> <span>Agregar Nueva Antena</span>';
                 document.getElementById('edit-id').value = '';
+                document.getElementById('field-numeroSesion').value = '';
                 document.getElementById('field-amount').value = 110;
                 const today = getTodayMidnight();
                 document.getElementById('field-ultimoPago').value = 
@@ -930,6 +959,10 @@
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+
+            if (focusSession) {
+                setTimeout(() => document.getElementById('field-numeroSesion').focus(), 50);
+            }
         }
 
         function closeModal() {
@@ -944,6 +977,7 @@
             const id = document.getElementById('edit-id').value;
             const data = {
                 asignado: document.getElementById('field-assigned').value.trim(),
+                numeroSesion: document.getElementById('field-numeroSesion').value.trim(),
                 kit: document.getElementById('field-kit').value.trim().toUpperCase(),
                 serial: document.getElementById('field-serial').value.trim().toUpperCase(),
                 monto: parseFloat(document.getElementById('field-amount').value) || 110,
@@ -978,6 +1012,7 @@
                     'N°': index + 1,
                     'KIT DE ANTENAS': a.kit,
                     'ASIGNADAS': a.asignado,
+                    'NUMERO DE INICIO DE SESION': a.numeroSesion || '',
                     'SERIAL': a.serial,
                     'FECHA DE COBROS': a.ultimoPago,
                     'PROXIMO PAGO': ev.proximoPago,
@@ -1026,6 +1061,8 @@
                         const kit = String(norm['kit de antenas'] || norm['kit'] || norm['kit number'] || '').trim().toUpperCase();
                         const asignado = String(norm['asignadas'] || norm['asignado a'] || norm['asignado'] || norm['cliente'] || 'SIN ASIGNAR').trim();
                         const serial = String(norm['serial'] || norm['sn'] || '').trim().toUpperCase();
+                        const rawSesion = norm['numero de inicio de sesion'] ?? norm['inicio de sesion'] ?? norm['sesion'] ?? norm['numero de sesion'] ?? norm['numero'] ?? '';
+                        const importedSesion = String(rawSesion).trim();
                         
                         const rawMonto = String(norm['tarifa mensual ($)'] || norm['monto'] || norm['tarifa'] || '110').replace(/[^0-9.,]/g, '').replace(',', '.');
                         const monto = parseFloat(rawMonto) || 110;
@@ -1035,10 +1072,12 @@
 
                         if (kit || serial) {
                             const existingIdx = antennas.findIndex(a => (kit && a.kit === kit) || (serial && a.serial === serial));
+                            const existingSesion = existingIdx !== -1 ? (antennas[existingIdx].numeroSesion || '') : '';
                             const record = {
                                 id: existingIdx !== -1 ? antennas[existingIdx].id : crypto.randomUUID(),
                                 kit: kit || 'N/A',
                                 asignado,
+                                numeroSesion: importedSesion || existingSesion,
                                 serial: serial || 'N/A',
                                 ultimoPago,
                                 monto
@@ -1098,6 +1137,25 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function escapeAttr(text) {
+            return String(text || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
+        function copySessionNumber(text) {
+            if (!text) return;
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast(`N° de sesión copiado: ${text}`, 'success');
+            } catch (err) {
+                showToast('No se pudo copiar el número', 'error');
+            }
+            document.body.removeChild(tempInput);
         }
 
         function showToast(message, type = 'info') {
