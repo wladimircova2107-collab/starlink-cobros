@@ -297,7 +297,7 @@
 
     <!-- Modal para Agregar / Editar Antena -->
     <div id="antenna-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="bg-noc-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+        <div class="bg-noc-900 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
             <div class="flex items-center justify-between pb-4 border-b border-slate-800">
                 <h3 id="modal-title" class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-satellite-dish text-sky-400"></i>
@@ -321,6 +321,19 @@
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">N° Inicio de Sesión</label>
                         <input type="text" id="field-numeroSesion" placeholder="Ej. +58 412-0000000 / ID"
                             class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm font-mono text-white focus:outline-none focus:border-sky-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Kit de Antena *</label>
+                        <input type="text" id="field-kit" required placeholder="Ej. KIT4M015491947GQ"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm font-mono uppercase text-white focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Serial de Antena *</label>
+                        <input type="text" id="field-serial" required placeholder="Ej. M1HT01638903RKJ"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-noc-950 border border-slate-700 text-sm font-mono uppercase text-white focus:outline-none focus:border-sky-500">
                     </div>
                 </div>
 
@@ -803,19 +816,22 @@
                         <div class="font-bold text-white uppercase tracking-tight">${escapeHtml(item.asignado)}</div>
                     </td>
                     <td class="py-3.5 px-4 whitespace-nowrap font-mono text-xs">
-                        ${hasSesion 
-                            ? `<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/90 border border-slate-700/80 text-slate-200">
-                                   <i class="fa-solid fa-key text-sky-400 text-[10px]"></i>
-                                   <span>${escapeHtml(item.numeroSesion)}</span>
-                                   <button onclick="copySessionNumber('${escapeAttr(item.numeroSesion)}')" class="ml-1 text-slate-400 hover:text-sky-400 transition" title="Copiar número de inicio de sesión">
+                        <div class="inline-flex items-center gap-1.5 bg-noc-950/90 border border-slate-700/80 focus-within:border-sky-500 rounded-lg px-2.5 py-1 transition">
+                            <i class="fa-solid fa-key text-sky-400 text-[10px]"></i>
+                            <input type="text" 
+                                value="${escapeAttr(item.numeroSesion || '')}" 
+                                placeholder="Escribir N° sesión..."
+                                onchange="updateSessionInline('${item.id}', this.value)"
+                                onkeydown="if(event.key==='Enter'){this.blur();}"
+                                class="bg-transparent text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none w-36"
+                                title="Escribe o edita el número de inicio de sesión y presiona Enter o sal del campo para guardar">
+                            ${hasSesion 
+                                ? `<button type="button" onclick="copySessionNumber('${escapeAttr(item.numeroSesion)}')" class="text-slate-400 hover:text-sky-400 transition pl-1" title="Copiar número de inicio de sesión">
                                        <i class="fa-regular fa-copy"></i>
-                                   </button>
-                               </div>`
-                            : `<button onclick="openModal('${item.id}', true)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-noc-950/70 hover:bg-slate-800 border border-dashed border-slate-700 text-slate-400 hover:text-sky-400 transition text-[11px]" title="Asignar número de inicio de sesión">
-                                   <i class="fa-solid fa-plus text-[10px]"></i>
-                                   <span>Agregar N° Sesión</span>
-                               </button>`
-                        }
+                                   </button>`
+                                : ''
+                            }
+                        </div>
                     </td>
                     <td class="py-3.5 px-4 font-mono text-xs">
                         <div class="text-sky-400 font-semibold">${escapeHtml(item.kit)}</div>
@@ -867,22 +883,22 @@
                         </div>
                         <div class="text-right font-mono shrink-0">
                             <div class="font-extrabold text-lg ${st.isDebt ? 'text-rose-400' : 'text-white'}">
-                                $${displayAmount.toFixed(2)}
-                            </div>
-                            <div class="text-[10px] text-slate-400">${amountSubtext}</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between gap-2 text-xs font-mono bg-noc-950/80 px-3 py-2 rounded-xl border border-slate-800/80">
-                        <span class="text-slate-400 text-[11px]"><i class="fa-solid fa-key text-sky-400 mr-1.5"></i>N° Sesión:</span>
-                        ${hasSesion
-                            ? `<div class="flex items-center gap-2 text-slate-200 font-semibold">
-                                   <span>${escapeHtml(item.numeroSesion)}</span>
-                                   <button onclick="copySessionNumber('${escapeAttr(item.numeroSesion)}')" class="text-sky-400 hover:text-sky-300" title="Copiar">
+                    <div class="flex items-center justify-between gap-2 text-xs font-mono bg-noc-950/80 px-3 py-2 rounded-xl border border-slate-800/80 focus-within:border-sky-500 transition">
+                        <span class="text-slate-400 text-[11px] shrink-0"><i class="fa-solid fa-key text-sky-400 mr-1.5"></i>N° Sesión:</span>
+                        <div class="flex items-center gap-2 flex-1 justify-end">
+                            <input type="text" 
+                                value="${escapeAttr(item.numeroSesion || '')}" 
+                                placeholder="Escribir N° sesión..."
+                                onchange="updateSessionInline('${item.id}', this.value)"
+                                onkeydown="if(event.key==='Enter'){this.blur();}"
+                                class="bg-transparent text-right text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none w-full max-w-[170px]">
+                            ${hasSesion
+                                ? `<button type="button" onclick="copySessionNumber('${escapeAttr(item.numeroSesion)}')" class="text-sky-400 hover:text-sky-300 shrink-0" title="Copiar">
                                        <i class="fa-regular fa-copy"></i>
-                                   </button>
-                               </div>`
-                            : `<button onclick="openModal('${item.id}', true)" class="text-sky-400 hover:underline text-[11px]">+ Asignar número</button>`
-                        }
+                                   </button>`
+                                : ''
+                            }
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2 text-xs font-mono bg-noc-950/60 p-2.5 rounded-xl border border-slate-800/80">
                         <div>
@@ -1140,7 +1156,25 @@
         }
 
         function escapeAttr(text) {
-            return String(text || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            return String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function updateSessionInline(id, newValue) {
+            const idx = antennas.findIndex(a => a.id === id);
+            if (idx === -1) return;
+            const trimmed = String(newValue || '').trim();
+            if ((antennas[idx].numeroSesion || '') === trimmed) return;
+
+            pushHistory();
+            antennas[idx].numeroSesion = trimmed;
+            saveToStorage();
+            renderAntennas();
+            showToast(`N° de sesión guardado para ${antennas[idx].asignado}`, 'success');
         }
 
         function copySessionNumber(text) {
